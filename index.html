@@ -28,7 +28,7 @@
 
     .container {
       width: 100%;
-      max-width: 480px; /* portrait feel */
+      max-width: 480px; /* portrait feel for phone */
       padding: 18px 12px 32px;
     }
 
@@ -284,9 +284,11 @@
 <body>
   <div class="container">
     <div class="card">
+
       <div class="header-row">
         <div>
           <h1><span class="emoji">💌</span>K-Flirt</h1>
+          <div class="subtitle">See their message in English and get your KR + EN reply.</div>
         </div>
         <button id="toggleApiPanelBtn">⚙️ API</button>
       </div>
@@ -319,22 +321,37 @@
       <!-- input -->
       <label for="koreanInput">Korean message</label>
       <textarea id="koreanInput" placeholder="예: 오늘 뭐 해? 우리 이번 주말에 만날까?"></textarea>
-      <div class="hint">Output: informal Korean reply (반말) + English meaning, matching the tone.</div>
+      <div class="hint">
+        It will translate their message to English and generate your reply in Korean + English.
+      </div>
 
       <!-- buttons -->
       <div class="button-row">
-        <button id="generateBtn">🔮 Generate reply</button>
-        <button id="clearBtn" type="button">🧹 Clear</button>
+        <button id="generateBtn">Generate</button>
+        <button id="clearBtn" type="button">Clear</button>
       </div>
 
       <div id="status"></div>
 
       <!-- output -->
       <div id="outputSection" class="output-section" style="display:none;">
+
+        <!-- Their message in English -->
         <div class="output-block">
           <div class="output-label">
             <div class="label-left">
-              <span>Korean reply</span>
+              <span>Their message (English)</span>
+              <span class="badge">KR → EN</span>
+            </div>
+          </div>
+          <div id="outputInputEnglish" class="output-text"></div>
+        </div>
+
+        <!-- Korean reply -->
+        <div class="output-block">
+          <div class="output-label">
+            <div class="label-left">
+              <span>Your reply (Korean)</span>
               <span class="badge">KR</span>
             </div>
             <button id="copyKoreanBtn" class="copy-btn" type="button">📋 Copy</button>
@@ -342,10 +359,11 @@
           <div id="outputKorean" class="output-text"></div>
         </div>
 
+        <!-- English reply -->
         <div class="output-block">
           <div class="output-label">
             <div class="label-left">
-              <span>English meaning</span>
+              <span>Your reply (English)</span>
               <span class="badge">EN</span>
             </div>
           </div>
@@ -372,7 +390,9 @@
   const statusEl      = document.getElementById("status");
   const generateBtn   = document.getElementById("generateBtn");
   const clearBtn      = document.getElementById("clearBtn");
+
   const outSec        = document.getElementById("outputSection");
+  const outInputEN    = document.getElementById("outputInputEnglish");
   const outKR         = document.getElementById("outputKorean");
   const outEN         = document.getElementById("outputEnglish");
   const copyKoreanBtn = document.getElementById("copyKoreanBtn");
@@ -445,22 +465,26 @@
         {
           role: "system",
           content: `
-You generate ONE Korean dating reply.
-Tone: ${tone}.
-Style: informal Korean (반말), natural.
-Then give English translation.
+You are a dating assistant.
 
-Return ONLY JSON:
+Given a Korean message from someone, you must:
+1) Translate THEIR Korean message to natural English.
+2) Generate ONE natural dating reply in Korean (informal, 반말) with tone: ${tone}.
+3) Translate YOUR reply to English.
+
+Return ONLY valid JSON with this exact structure:
+
 {
-  "korean_reply": "...",
-  "english_translation": "..."
+  "input_english": "...",      // English translation of their Korean message
+  "reply_korean": "...",       // Your Korean reply (informal, 반말)
+  "reply_english": "..."       // English meaning of your reply
 }
-        `.trim()
+          `.trim()
         },
         { role: "user", content: message }
       ],
       temperature: 0.7,
-      max_tokens: 300
+      max_tokens: 400
     };
 
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -483,6 +507,7 @@ Return ONLY JSON:
     if (txt.startsWith("```")) {
       txt = txt.replace(/```json/i, "").replace(/```/g, "").trim();
     }
+
     return JSON.parse(txt);
   }
 
@@ -514,8 +539,11 @@ Return ONLY JSON:
 
     try {
       const r = await groqReply(apiKey, modelName, msg, tone);
-      outKR.textContent = (r.korean_reply || "").trim();
-      outEN.textContent = (r.english_translation || "").trim();
+
+      outInputEN.textContent = (r.input_english || "").trim();
+      outKR.textContent      = (r.reply_korean || "").trim();
+      outEN.textContent      = (r.reply_english || "").trim();
+
       outSec.style.display = "block";
       statusEl.textContent = "Done.";
     } catch (e) {
@@ -523,16 +551,17 @@ Return ONLY JSON:
       statusEl.textContent = e.message || "Unknown error";
     } finally {
       generateBtn.disabled = false;
-      generateBtn.textContent = "🔮 Generate reply";
+      generateBtn.textContent = "🔮 Generate";
     }
   };
 
   clearBtn.onclick = () => {
-    inputKR.value = "";
-    outKR.textContent = "";
-    outEN.textContent = "";
+    inputKR.value      = "";
+    outInputEN.textContent = "";
+    outKR.textContent  = "";
+    outEN.textContent  = "";
     outSec.style.display = "none";
-    statusEl.textContent = "";
+    statusEl.textContent  = "";
     statusEl.classList.remove("error");
   };
 
