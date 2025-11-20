@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>K-Flirt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="search.png" />
+  <link rel="apple-touch-icon" href="search.png" />
+
+  <style>
+    :root { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; color-scheme: dark; }
+    * { box-sizing: border-box; }
+
+    body {
+      margin:0; padding:0;
+      background:#05060a; color:#f5f5f5;
+      display:flex; justify-content:center; align-items:flex-start;
+      min-height:100vh;
+    }
+    .container { width:100%; max-width:840px; padding:20px 12px 32px; }
+    .card {
+      width:100%;
+      background:radial-gradient(circle at top left,#1d2233 0,#0b0c12 55%,#05060a 100%);
+      border-radius:18px; padding:18px 16px 20px;
+      box-shadow:0 18px 40px rgba(0,0,0,.6); border:1px solid rgba(255,255,255,.06);
+    }
+    .card-inner { max-width:760px; margin:0 auto; }
+
+    h1 { font-size:1.35rem; margin:0 0 4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    h1 .emoji { font-size:1.5rem; }
+    .subtitle { font-size:.86rem; color:#a0a4b8; }
+
+    .top-row {
+      display:flex; justify-content:space-between; align-items:flex-start;
+      gap:10px; margin-bottom:10px;
+    }
+
+    label { font-size:.84rem; margin-bottom:5px; color:#c8cbe0; display:block; }
+
+    textarea {
+      width:100%; min-height:90px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(9,11,20,.95); color:#fff;
+      padding:9px 11px; font-size:.95rem; resize:vertical; outline:none;
+    }
+    textarea:focus { border-color:#4f8cff; box-shadow:0 0 0 1px rgba(79,140,255,.45); }
+
+    /* API panel + settings */
+    #toggleApiPanelBtn {
+      background:transparent; color:#d3dcff;
+      border:1px solid rgba(255,255,255,.16);
+      font-size:.8rem; padding:7px 12px; border-radius:999px; cursor:pointer; white-space:nowrap;
+    }
+    #toggleApiPanelBtn.saved { border-color:#4f8cff; color:#bcd2ff; }
+
+    .api-panel {
+      display:none;
+      background:rgba(10,12,20,.96);
+      padding:12px; border-radius:12px;
+      margin-bottom:12px;
+      border:1px solid rgba(255,255,255,.12);
+    }
+
+    .api-input {
+      width:100%; padding:8px 11px; border-radius:8px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(5,7,14,.95); color:#fff; font-size:.84rem; outline:none;
+      margin-bottom:10px;
+    }
+    .api-input:focus { border-color:#4f8cff; }
+
+    .api-panel-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+    .api-panel-save {
+      background:linear-gradient(135deg,#4f8cff,#9b6bff);
+      padding:6px 12px; border-radius:999px; border:none; color:#fff; cursor:pointer;
+      font-size:.8rem;
+    }
+    .api-panel-close {
+      background:transparent; padding:6px 12px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.18); color:#bbb; cursor:pointer;
+      font-size:.8rem;
+    }
+    #apiPanelStatus { font-size:.75rem; min-height:1.1em; }
+
+    /* Tone selector */
+    .tone-section { margin:10px 0 10px; }
+    .tone-row { display:flex; gap:12px; flex-wrap:wrap; }
+    .tone-row label {
+      display:inline-flex; align-items:center; gap:5px; cursor:pointer;
+      font-size:.8rem; padding:4px 9px; background:rgba(9,11,20,.85);
+      border-radius:999px; border:1px solid rgba(255,255,255,.09);
+    }
+
+    /* Buttons */
+    .button-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    button {
+      border-radius:999px; border:none;
+      padding:8px 16px; font-size:.9rem; cursor:pointer;
+      font-weight:500; display:flex; align-items:center; gap:6px;
+    }
+    #generateBtn { flex:1 1 auto; background:linear-gradient(135deg,#4f8cff,#9b6bff); color:white; }
+    #clearBtn { background:transparent; border:1px solid rgba(255,255,255,.16); color:#ccc; }
+
+    #status { font-size:.8rem; min-height:1.2em; }
+    #status.error { color:#ff8080; }
+
+    .output-section { margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,.09); }
+    .output-block { margin-bottom:12px; }
+
+    .output-label { font-size:.82rem; color:#c8cbe0; margin-bottom:4px; display:flex; align-items:center; gap:6px; }
+    .badge { font-size:.7rem; padding:2px 8px; border-radius:999px; background:rgba(79,140,255,.18); color:#d3dcff; }
+    .output-text {
+      background:rgba(5,7,14,.96);
+      padding:9px 11px; border-radius:10px;
+      border:1px solid rgba(255,255,255,.05); font-size:.95rem;
+      white-space:pre-wrap; word-break:break-word;
+    }
+
+    @media (max-width:640px) {
+      h1 { font-size:1.2rem; }
+      #toggleApiPanelBtn { align-self:flex-end; }
+      .button-row { flex-direction:column; }
+      #generateBtn, #clearBtn { width:100%; justify-content:center; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="card"><div class="card-inner">
+
+    <div class="top-row">
+      <div>
+        <h1><span class="emoji">💌</span>K-Flirt</h1>
+        <div class="subtitle">Choose tone → paste Korean → get KR + EN reply.</div>
+      </div>
+      <button id="toggleApiPanelBtn">⚙️ API</button>
+    </div>
+
+    <!-- API / MODEL Panel -->
+    <div id="apiPanel" class="api-panel">
+      <label>API Key</label>
+      <input id="apiKeyInput" type="password" class="api-input" placeholder="sk_..." />
+
+      <label>Model</label>
+      <input id="modelInput" type="text" class="api-input" />
+
+      <div class="api-panel-row">
+        <button id="saveApiBtn" class="api-panel-save">💾 Save</button>
+        <button id="closeApiBtn" class="api-panel-close">✖ Close</button>
+      </div>
+      <div id="apiPanelStatus"></div>
+    </div>
+
+    <!-- Tone selector -->
+    <div class="tone-section">
+      <label>Reply tone (pick one)</label>
+      <div class="tone-row">
+        <label><input type="checkbox" class="tone" id="toneSexual"> Sexual</label>
+        <label><input type="checkbox" class="tone" id="toneWitty"> Witty</label>
+        <label><input type="checkbox" class="tone" id="toneMature"> Mature</label>
+      </div>
+    </div>
+
+    <label>Korean message</label>
+    <textarea id="koreanInput" placeholder="예: 오늘 뭐 해? 우리 이번 주말에 만날까?"></textarea>
+
+    <div class="button-row">
+      <button id="generateBtn">🔮 Generate</button>
+      <button id="clearBtn">🧹 Clear</button>
+    </div>
+
+    <div id="status"></div>
+
+    <!-- Output -->
+    <div id="outputSection" class="output-section" style="display:none;">
+      <div class="output-block">
+        <div class="output-label">Korean reply <span class="badge">KR</span></div>
+        <div id="outputKorean" class="output-text"></div>
+      </div>
+      <div class="output-block">
+        <div class="output-label">English meaning <span class="badge">EN</span></div>
+        <div id="outputEnglish" class="output-text"></div>
+      </div>
+    </div>
+
+  </div></div>
+</div>
+
+<script>
+  const API_KEY_STORAGE = "groq_api_key";
+  const MODEL_STORAGE = "groq_model";
+
+  const toggleBtn = document.getElementById("toggleApiPanelBtn");
+  const apiPanel = document.getElementById("apiPanel");
+  const apiInput = document.getElementById("apiKeyInput");
+  const modelInput = document.getElementById("modelInput");
+  const saveApiBtn = document.getElementById("saveApiBtn");
+  const closeApiBtn = document.getElementById("closeApiBtn");
+  const apiStatus = document.getElementById("apiPanelStatus");
+
+  const tones = document.querySelectorAll(".tone");
+  const inputKR = document.getElementById("koreanInput");
+  const statusEl = document.getElementById("status");
+  const generateBtn = document.getElementById("generateBtn");
+  const clearBtn = document.getElementById("clearBtn");
+  const outSec = document.getElementById("outputSection");
+  const outKR = document.getElementById("outputKorean");
+  const outEN = document.getElementById("outputEnglish");
+
+  // Load API + Model
+  (function init(){
+    const savedKey = localStorage.getItem(API_KEY_STORAGE);
+    const savedModel = localStorage.getItem(MODEL_STORAGE) || "llama-3.3-70b-versatile";
+
+    if (savedKey) {
+      apiInput.value = savedKey;
+      toggleBtn.classList.add("saved");
+      toggleBtn.textContent = "⚙️ API (saved)";
+    }
+    modelInput.value = savedModel;
+  })();
+
+  toggleBtn.onclick = () => {
+    apiPanel.style.display = apiPanel.style.display === "block" ? "none" : "block";
+    apiStatus.textContent = "";
+  };
+  closeApiBtn.onclick = () => apiPanel.style.display = "none";
+
+  // Save API + Model locally
+  saveApiBtn.onclick = () => {
+    const key = apiInput.value.trim();
+    const modelName = modelInput.value.trim();
+
+    if (!key) {
+      apiStatus.textContent = "API key cannot be empty.";
+      apiStatus.style.color = "#ff8080";
+      return;
+    }
+    if (!modelName) {
+      apiStatus.textContent = "Model cannot be empty.";
+      apiStatus.style.color = "#ff8080";
+      return;
+    }
+
+    localStorage.setItem(API_KEY_STORAGE, key);
+    localStorage.setItem(MODEL_STORAGE, modelName);
+
+    apiStatus.textContent = "Saved.";
+    apiStatus.style.color = "#96e6a1";
+
+    toggleBtn.classList.add("saved");
+    toggleBtn.textContent = "⚙️ API (saved)";
+  };
+
+  // tone = fake radio buttons
+  tones.forEach(t => {
+    t.addEventListener("change", () => {
+      if (t.checked) tones.forEach(o => { if (o !== t) o.checked = false; });
+    });
+  });
+
+  function getTone() {
+    if (document.getElementById("toneSexual").checked) return "sexual and bold";
+    if (document.getElementById("toneWitty").checked) return "witty and playful";
+    if (document.getElementById("toneMature").checked) return "mature and confident";
+    return "neutral flirty";
+  }
+
+  async function groqReply(apiKey, modelName, message, tone) {
+    const body = {
+      model: modelName,
+      messages: [
+        {
+          role: "system",
+          content: `
+You generate ONE Korean dating reply.
+Tone: ${tone}.
+Style: informal Korean (반말), natural. Sound like a human texting.
+Then give English translation.
+
+Return ONLY JSON:
+{
+  "korean_reply": "...",
+  "english_translation": "..."
+}
+          `.trim()
+        },
+        { role: "user", content: message }
+      ],
+      temperature: 0.7,
+      max_tokens: 300
+    };
+
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        Authorization:"Bearer " + apiKey
+      },
+      body:JSON.stringify(body)
+    });
+
+    if (!res.ok) {
+      const raw = await res.text();
+      throw new Error("Groq error: " + res.status + " " + raw);
+    }
+
+    const data = await res.json();
+    let txt = data.choices[0].message.content.trim();
+    if (txt.startsWith("```")) {
+      txt = txt.replace(/```json|```/g, "").trim();
+    }
+    return JSON.parse(txt);
+  }
+
+  generateBtn.onclick = async () => {
+    const apiKey = localStorage.getItem(API_KEY_STORAGE);
+    const modelName = localStorage.getItem(MODEL_STORAGE) || "llama-3.3-70b-versatile";
+    const msg = inputKR.value.trim();
+    const tone = getTone();
+
+    statusEl.classList.remove("error");
+    statusEl.textContent = "";
+
+    if (!apiKey) {
+      statusEl.textContent = "Save your API first.";
+      statusEl.classList.add("error");
+      apiPanel.style.display = "block";
+      return;
+    }
+    if (!msg) {
+      statusEl.textContent = "Enter a Korean message.";
+      statusEl.classList.add("error");
+      return;
+    }
+
+    generateBtn.disabled = true;
+    generateBtn.textContent = "Generating...";
+    statusEl.textContent = "Contacting Groq...";
+    outSec.style.display = "none";
+
+    try {
+      const r = await groqReply(apiKey, modelName, msg, tone);
+      outKR.textContent = r.korean_reply;
+      outEN.textContent = r.english_translation;
+      outSec.style.display = "block";
+      statusEl.textContent = "Done.";
+    } catch (e) {
+      statusEl.classList.add("error");
+      statusEl.textContent = e.message;
+    } finally {
+      generateBtn.disabled = false;
+      generateBtn.textContent = "🔮 Generate";
+    }
+  };
+
+  clearBtn.onclick = () => {
+    inputKR.value = "";
+    outKR.textContent = "";
+    outEN.textContent = "";
+    outSec.style.display = "none";
+    statusEl.textContent = "";
+    statusEl.classList.remove("error");
+  };
+</script>
+
+</body>
+</html>
