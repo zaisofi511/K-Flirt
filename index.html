@@ -467,7 +467,7 @@
           content: `
 You are a dating assistant.
 
-Given a Korean message from someone, you must:
+Given a Korean message from a girl, you must:
 1) Translate THEIR Korean message to natural English.
 2) Generate ONE natural dating reply in Korean (informal, 반말) with tone: ${tone}.
 3) Translate YOUR reply to English.
@@ -479,6 +479,7 @@ Return ONLY valid JSON with this exact structure:
   "reply_korean": "...",       // Your Korean reply (informal, 반말)
   "reply_english": "..."       // English meaning of your reply
 }
+keep in mind its a girl sending the message and its a guy receiving the message
           `.trim()
         },
         { role: "user", content: message }
